@@ -44,7 +44,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     export DEBIAN_FRONTEND=noninteractive
 
     apt-get update -y
-    apt-get install -y git vim curl openssh-server
+    apt-get install -y git vim curl build-essential openssh-server
     apt-get install -y jq open-iscsi nfs-common
   SHELL
 
