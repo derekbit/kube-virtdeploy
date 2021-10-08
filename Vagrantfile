@@ -3,6 +3,7 @@
 
 VAGRANTFILE_API_VERSION = "2"
 
+server_hostname="master"
 server_ip="10.20.90.60"
 server_vnc_port=5910
 
@@ -15,6 +16,8 @@ workers = [
 $write_server_config=<<SCRIPT
 cat <<EOF > /etc/rancher/rke2/config.yaml
 token: helloworld
+node-external-ip: ${1}
+node-ip: ${1}
 EOF
 SCRIPT
 
@@ -22,6 +25,8 @@ $write_worker_config=<<SCRIPT
 cat <<EOF > /etc/rancher/rke2/config.yaml
 server: https://${1}:9345
 token: helloworld
+node-external-ip: ${2}
+node-ip: ${2}
 EOF
 SCRIPT
 
@@ -44,8 +49,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   SHELL
 
   # Server node
-  config.vm.define "server" do |node|
-    node.vm.hostname = "server"
+  config.vm.define "#{server_hostname}" do |node|
+    node.vm.hostname = "#{server_hostname}"
     node.vm.network "public_network",
       :dev => "br0",
       :mode => "bridge",
@@ -58,36 +63,40 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       v.graphics_port = "#{server_vnc_port}"
       v.graphics_passwd = '1234'
     end
-    node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | sh -"
-    node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
-    node.vm.provision "shell", privileged: true, inline: $write_server_config
-    node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-server.service"
-    node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-server.service"
     node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export KUBECONFIG=/etc/rancher/rke2/rke2.yaml >> /root/.bashrc'"
     node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export PATH=$PATH:/var/lib/rancher/rke2/bin >> /root/.bashrc'"
+    node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | sh -"
+    node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-server.service"
+    node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
+    node.vm.provision "shell", privileged: true, inline: $write_server_config, args: ["#{server_ip}"]
+    node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-server.service"
   end
 
   # Worker nodes
   workers.each do |worker|
     config.vm.define worker[:hostname] do |node|
-      node.vm.hostname = worker[:hostname]
+      hostname = worker[:hostname]
+      ip = worker[:ip]
+      vnc_port = worker[:vnc_port]
+
+      node.vm.hostname = "#{hostname}"
       node.vm.network "public_network",
         :dev => "br0",
         :mode => "bridge",
         :type => "bridge",
-        :ip => worker[:ip]
+        :ip => "#{ip}"
       node.vm.provider "libvirt" do |v|
         v.cpus = 4
         v.memory = 4096
         v.graphics_ip = '0.0.0.0'
-        v.graphics_port = worker[:vnc_port]
+        v.graphics_port = "#{vnc_port}"
         v.graphics_passwd = '1234'
       end
       node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=\"agent\" sh -"
       node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-agent.service"
       node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
-      node.vm.provision "shell", privileged: true, inline: $write_worker_config, args: "#{server_ip}"
-      #node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-agent.service"
+      node.vm.provision "shell", privileged: true, inline: $write_worker_config, args: ["#{server_ip}", "#{ip}"]
+      node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-agent.service"
     end
   end
 end
