@@ -63,6 +63,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       v.graphics_port = "#{server_vnc_port}"
       v.graphics_passwd = '1234'
     end
+
+    # Install rke-server
     node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export KUBECONFIG=/etc/rancher/rke2/rke2.yaml >> /root/.bashrc'"
     node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export PATH=$PATH:/var/lib/rancher/rke2/bin >> /root/.bashrc'"
     node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | sh -"
@@ -70,6 +72,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
     node.vm.provision "shell", privileged: true, inline: $write_server_config, args: ["#{server_ip}"]
     node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-server.service"
+    # Install docker
+    node.vm.provision "shell", privileged: true, inline: <<-SHELL
+      set -e -x -u
+      export DEBIAN_FRONTEND=noninteractive
+
+      apt-get install -y apt-transport-https ca-certificates gnupg lsb-release
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+      echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      apt-get update -y
+      apt-get install -y docker-ce docker-ce-cli containerd.io
+    SHELL
   end
 
   # Worker nodes
@@ -92,6 +106,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.graphics_port = "#{vnc_port}"
         v.graphics_passwd = '1234'
       end
+      # Install rke2-agent
       node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=\"agent\" sh -"
       node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-agent.service"
       node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
