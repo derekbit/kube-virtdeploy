@@ -5,12 +5,14 @@ VAGRANTFILE_API_VERSION = "2"
 
 server_hostname="master"
 server_ip="10.20.90.60"
-server_vnc_port=5910
+server_vnc_port=5905
 
 workers = [
-  { :hostname => "worker1", :ip => "10.20.90.61", :vnc_port => 5911 },
-  { :hostname => "worker2", :ip => "10.20.90.62", :vnc_port => 5912 },
-  { :hostname => "worker3", :ip => "10.20.90.63", :vnc_port => 5913 }
+  { :hostname => "worker1", :ip => "10.20.90.61", :vnc_port => 5906 },
+  { :hostname => "worker2", :ip => "10.20.90.62", :vnc_port => 5907 },
+  { :hostname => "worker3", :ip => "10.20.90.63", :vnc_port => 5908 },
+  { :hostname => "worker4", :ip => "10.20.90.64", :vnc_port => 5909 },
+  { :hostname => "worker5", :ip => "10.20.90.65", :vnc_port => 5910 }
 ]
 
 $write_server_config=<<SCRIPT
@@ -46,6 +48,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get update -y
     apt-get install -y git vim curl build-essential openssh-server
     apt-get install -y jq open-iscsi nfs-common
+    
+    echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
+    echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
   SHELL
 
   # Server node
@@ -83,6 +88,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
       apt-get update -y
       apt-get install -y docker-ce docker-ce-cli containerd.io
+
+      echo "root:vagrant" | chpasswd
+
+      echo "source <(kubectl completion bash)" >> /root/.bashrc
+      echo "alias k='kubectl'" >> /root/.bashrc
+      echo "complete -F __start_kubectl k" >> /root/.bashrc
+      echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
+      echo "complete -F __start_kubectl kl" >> /root/.bashrc
+
+      git config --global user.name "Derek Su"
+      git config --global user.email derek.su@suse.com
+      git config --global core.editor vim
     SHELL
   end
 
