@@ -48,10 +48,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get update -y
     apt-get install -y git vim curl build-essential openssh-server
     apt-get install -y jq open-iscsi nfs-common
-    
+
     echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
     echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
   SHELL
+
+  config.vm.provision "net",
+    type: "shell",
+    path: "scripts/fix.generic-ubuntu-dns.sh",
+    privileged: true,
+    run: "always"
 
   # Server node
   config.vm.define "#{server_hostname}" do |node|
