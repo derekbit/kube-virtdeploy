@@ -1,0 +1,87 @@
+# -*- mode: ruby -*-
+# # # vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+server_hostname="master"
+server_ip="10.20.90.60"
+server_vnc_port=5905
+
+workers = [
+  { :hostname => "worker1", :ip => "10.20.90.61", :vnc_port => 5906 },
+  { :hostname => "worker2", :ip => "10.20.90.62", :vnc_port => 5907 },
+  { :hostname => "worker3", :ip => "10.20.90.63", :vnc_port => 5908 },
+  { :hostname => "worker4", :ip => "10.20.90.64", :vnc_port => 5909 },
+  { :hostname => "worker5", :ip => "10.20.90.65", :vnc_port => 5910 }
+]
+
+$write_worker_config=<<SCRIPT
+cat <<EOF > /etc/rancher/rke2/config.yaml
+server: https://${1}:9345
+token: helloworld
+node-external-ip: ${2}
+node-ip: ${2}
+EOF
+SCRIPT
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = "kvm"
+    libvirt.graphics_type = 'vnc'
+  end
+
+  config.vm.box = "generic/ubuntu1804"
+  config.vm.box_version = "3.4.2"
+
+  config.vm.provision "net",
+    type: "shell",
+    path: "../scripts/fix.generic-ubuntu-dns.sh",
+    privileged: true,
+    run: "always"
+
+  config.vm.provision "shell",
+    run: "always",
+    inline: "route add default gw 10.20.90.1"
+
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e -x -u
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update -y
+    apt-get install -y git vim curl build-essential openssh-server
+    apt-get install -y jq open-iscsi nfs-common
+
+    echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
+    echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
+  SHELL
+
+  # Worker nodes
+  workers.each do |worker|
+    config.vm.define worker[:hostname] do |node|
+      hostname = worker[:hostname]
+      ip = worker[:ip]
+      vnc_port = worker[:vnc_port]
+
+      node.vm.hostname = "#{hostname}"
+      node.vm.network "public_network",
+        :dev => "br0",
+        :mode => "bridge",
+        :type => "bridge",
+        :ip => "#{ip}",
+        :netmask => "255.255.254.0"
+      node.vm.provider "libvirt" do |v|
+        v.cpus = 4
+        v.memory = 4096
+        v.graphics_ip = '0.0.0.0'
+        v.graphics_port = "#{vnc_port}"
+        v.graphics_passwd = '1234'
+      end
+      # Install rke2-agent
+      node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=\"agent\" sh -"
+      node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-agent.service"
+      node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
+      node.vm.provision "shell", privileged: true, inline: $write_worker_config, args: ["#{server_ip}", "#{ip}"]
+      node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-agent.service"
+    end
+  end
+end

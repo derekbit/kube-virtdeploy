@@ -3,14 +3,19 @@
 Create a kubernetes cluster using vagrant/kvm/rke2 in minutes.
 
 ## Usage
+### Stop
+```
+$ sudo vagrant destroy
+```
+## Usage
 ### Start
 ```
 $ git clone https://github.com/derekbit/rke2-vagrant.git
 $ cd rke2-vagrant
-$ sudo vagrant up
+$ sudo ./start.sh
 ```
 
 ### Stop
 ```
-$ sudo vagrant destroy
+$ sudo ./stop.sh
 ```

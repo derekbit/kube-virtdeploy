@@ -26,7 +26,7 @@ systemctl restart ifplugd.service
 # Remove fixed DNS entries and disable DNSSEC, disable flaky caching, or emdns
 tee <<EOF > /etc/systemd/resolved.conf
 [Resolve]
-DNS=
+DNS=8.8.8.8
 FallbackDNS=
 Domains=
 #LLMNR=no
