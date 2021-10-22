@@ -11,8 +11,6 @@ server = config_file['cluster']['server']
 
 hostname = "#{cluster['prefix']}-#{server['name']}"
 ip = "#{server['ip']}"
-#hostname = "master11"
-#ip = "10.20.90.80"
 
 $write_config=<<SCRIPT
 cat <<EOF > /etc/rancher/rke2/config.yaml
@@ -63,8 +61,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       :netmask => "255.255.254.0"
 
     node.vm.provider "libvirt" do |v|
-      v.cpus = 4
-      v.memory = 4096
+      v.cpus = vm['cpus']
+      v.memory = vm['memory']
     end
 
     # Install rke-server
