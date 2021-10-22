@@ -1,0 +1,16 @@
+cluster:
+  prefix: my
+  vm:
+    box: generic/ubuntu1804
+    version: 3.4.2
+  token: helloworld
+  server:
+    name: master
+    ip: 10.20.90.80
+  workers:
+    - name: worker1
+      ip: 10.20.90.81
+    - name: worker2
+      ip: 10.20.90.82
+    - name: worker3
+      ip: 10.20.90.83
