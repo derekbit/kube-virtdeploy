@@ -3,8 +3,7 @@ cluster:
   vm:
     box: generic/ubuntu1804
     version: 3.4.2
-    disksize: 50GB
-    cpus: 2
+    cpus: 4
     memory: 4096
   token: helloworld
   server:
