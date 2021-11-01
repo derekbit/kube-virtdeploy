@@ -6,17 +6,21 @@ VAGRANTFILE_API_VERSION = "2"
 config_file = YAML.load_file('../config.yaml')
 cluster = config_file['cluster']
 
+bootstrap = config_file['cluster']['bootstrap']
+kubectl = config_file['cluster']['kubectl']
+
 vm = config_file['cluster']['vm']
 server = config_file['cluster']['server']
 
 hostname = "#{cluster['prefix']}-#{server['name']}"
 ip = "#{server['ip']}"
 
-$write_config=<<SCRIPT
+$write_rke2_config=<<SCRIPT
 cat <<EOF > /etc/rancher/rke2/config.yaml
 token: ${1}
 node-external-ip: ${2}
 node-ip: ${2}
+kubelet-arg: "--v=4"
 EOF
 SCRIPT
 
@@ -45,10 +49,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get update -y
     apt-get install -y git vim curl build-essential openssh-server
     apt-get install -y jq open-iscsi nfs-common
-
-    echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
-    echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
   SHELL
+
+  if bootstrap['name'] == 'rke2'
+    config.vm.provision "shell", privileged: true, inline: <<-SHELL
+      set -e -x -u
+      export DEBIAN_FRONTEND=noninteractive
+
+      echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
+      echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
+    SHELL
+  elsif bootstrap['name'] == 'k3s'
+    config.vm.provision "shell", privileged: true, inline: <<-SHELL
+      set -e -x -u
+      export DEBIAN_FRONTEND=noninteractive
+
+      wget https://dl.k8s.io/release/#{kubectl['version']}/bin/linux/amd64/kubectl -P /usr/local/bin
+      chmod 755 /usr/local/bin/kubectl
+    SHELL
+  end
 
   # Server node
   config.vm.define "#{hostname}" do |node|
@@ -65,14 +84,28 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       v.memory = vm['memory']
     end
 
-    # Install rke-server
-    node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export KUBECONFIG=/etc/rancher/rke2/rke2.yaml >> /root/.bashrc'"
-    node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export PATH=$PATH:/var/lib/rancher/rke2/bin >> /root/.bashrc'"
-    node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | sh -"
-    node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-server.service"
-    node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
-    node.vm.provision "shell", privileged: true, inline: $write_config, args: [cluster['token'], "#{ip}"]
-    node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-server.service"
+    # Start master service
+    if bootstrap['name'] == 'rke2'
+      node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export KUBECONFIG=/etc/rancher/rke2/rke2.yaml >> /root/.bashrc'"
+      node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export PATH=$PATH:/var/lib/rancher/rke2/bin >> /root/.bashrc'"
+      node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | sh -"
+      node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-server.service"
+      node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
+      node.vm.provision "shell", privileged: true, inline: $write_rke2_config, args: [cluster['token'], "#{ip}"]
+      node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-server.service"
+    elsif bootstrap['name'] == 'k3s'
+      node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/k3s"
+      node.vm.provision "shell", privileged: true, inline: <<-SHELL
+        set -e -x -u
+        export DEBIAN_FRONTEND=noninteractive
+
+        export INSTALL_K3S_VERSION=#{bootstrap['version']}
+        curl -sfL https://get.k3s.io | sh -
+        mkdir -p /root/.kube
+        cp -a /etc/rancher/k3s/k3s.yaml /root/.kube/config
+      SHELL
+    end
+
     # Install docker
     node.vm.provision "shell", privileged: true, inline: <<-SHELL
       set -e -x -u

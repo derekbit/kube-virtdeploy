@@ -2,6 +2,11 @@
 
 Create a kubernetes cluster using vagrant/kvm/rke2 in minutes.
 
+## Prerequisite
+```
+$ vagrant plugin install vagrant-disksize
+```
+
 ## Usage
 ### Stop
 ```

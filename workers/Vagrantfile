@@ -6,16 +6,20 @@ VAGRANTFILE_API_VERSION = "2"
 config_file = YAML.load_file('../config.yaml')
 cluster = config_file['cluster']
 
+bootstrap = config_file['cluster']['bootstrap']
+kubectl = config_file['cluster']['kubectl']
+
 vm = config_file['cluster']['vm']
 server = config_file['cluster']['server']
 workers = config_file['cluster']['workers']
 
-$write_config=<<SCRIPT
+$write_rke2_config=<<SCRIPT
 cat <<EOF > /etc/rancher/rke2/config.yaml
 server: https://${1}:9345
 token: ${2}
 node-external-ip: ${3}
 node-ip: ${3}
+kubelet-arg: "--v=4"
 EOF
 SCRIPT
 
@@ -44,10 +48,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get update -y
     apt-get install -y git vim curl build-essential openssh-server
     apt-get install -y jq open-iscsi nfs-common
-
-    echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
-    echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
   SHELL
+
+  if bootstrap['name'] == 'rke2'
+    config.vm.provision "shell", privileged: true, inline: <<-SHELL
+      set -e -x -u
+      export DEBIAN_FRONTEND=noninteractive
+
+      echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
+      echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
+    SHELL
+  elsif bootstrap['name'] == 'k3s'
+    config.vm.provision "shell", privileged: true, inline: <<-SHELL
+      set -e -x -u
+      export DEBIAN_FRONTEND=noninteractive
+    SHELL
+  end
 
   # Worker nodes
   workers.each do |worker|
@@ -66,12 +82,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.cpus = vm['cpus']
         v.memory = vm['memory']
       end
-      # Install rke2-agent
-      node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=\"agent\" sh -"
-      node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-agent.service"
-      node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
-      node.vm.provision "shell", privileged: true, inline: $write_config, args: [server['ip'], cluster['token'], "#{ip}"]
-      node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-agent.service"
+      # Start worker service
+      if bootstrap['name'] == 'rke2'
+        node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=\"agent\" sh -"
+        node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-agent.service"
+        node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
+        node.vm.provision "shell", privileged: true, inline: $write_rke2_config, args: [server['ip'], cluster['token'], "#{ip}"]
+        node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-agent.service"
+      elsif bootstrap['name'] == 'k3s'
+        node.vm.provision "shell", privileged: true, inline: <<-SHELL
+          set -e -x -u
+          export DEBIAN_FRONTEND=noninteractive
+
+          export INSTALL_K3S_VERSION=#{bootstrap['version']}
+          export K3S_URL=https://#{server['ip']}:6443
+          export K3S_TOKEN=#{cluster['token']}
+
+          curl -sfL https://get.k3s.io | sh -
+        SHELL
+      end
     end
   end
 end
