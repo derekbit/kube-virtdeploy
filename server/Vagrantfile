@@ -4,10 +4,12 @@
 VAGRANTFILE_API_VERSION = "2"
 
 config_file = YAML.load_file('../config.yaml')
+
 cluster = config_file['cluster']
 
 bootstrap = config_file['cluster']['bootstrap']
 kubectl = config_file['cluster']['kubectl']
+k9s = config_file['cluster']['k9s']
 
 vm = config_file['cluster']['vm']
 server = config_file['cluster']['server']
@@ -42,6 +44,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     run: "always",
     inline: "route add default gw 10.20.90.1"
 
+  # Set root password
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e -x -u
+    export DEBIAN_FRONTEND=noninteractive
+
+    echo "root:vagrant" | chpasswd
+  SHELL
+
   config.vm.provision "shell", privileged: true, inline: <<-SHELL
     set -e -x -u
     export DEBIAN_FRONTEND=noninteractive
@@ -49,7 +59,62 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get update -y
     apt-get install -y git vim curl build-essential openssh-server
     apt-get install -y jq open-iscsi nfs-common
+
+    bash <(curl -Ss https://raw.githubusercontent.com/derekbit/dev-env/basic/install.sh)
   SHELL
+
+  # Install k9s
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e -x -u
+    export DEBIAN_FRONTEND=noninteractive
+
+    curl -sfL https://github.com/derailed/k9s/releases/download/#{k9s['version']}/k9s_Linux_x86_64.tar.gz | tar zxvf - -C /usr/local/bin
+    chmod 755 /usr/local/bin/k9s
+  SHELL
+
+  # Install my development tools
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e -x -u
+    export DEBIAN_FRONTEND=noninteractive
+
+    bash <(curl -Ss https://raw.githubusercontent.com/derekbit/dev-env/basic/install.sh)
+  SHELL
+
+  # Install docker
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e -x -u
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get install -y apt-transport-https ca-certificates gnupg lsb-release
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get update -y
+    apt-get install -y docker-ce docker-ce-cli containerd.io
+  SHELL
+
+  # Set git configuration
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e -x -u
+    export DEBIAN_FRONTEND=noninteractive
+
+    git config --global user.name "Derek Su"
+    git config --global user.email derek.su@suse.com
+    git config --global core.editor vim
+  SHELL
+
+  # Set kubectl completion
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    set -e -x -u
+    export DEBIAN_FRONTEND=noninteractive
+
+    echo "source <(kubectl completion bash)" >> /root/.bashrc
+    echo "alias k='kubectl'" >> /root/.bashrc
+    echo "complete -F __start_kubectl k" >> /root/.bashrc
+    echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
+    echo "complete -F __start_kubectl kl" >> /root/.bashrc
+  SHELL
+
 
   if bootstrap['name'] == 'rke2'
     config.vm.provision "shell", privileged: true, inline: <<-SHELL
@@ -108,29 +173,5 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       SHELL
     end
 
-    # Install docker
-    node.vm.provision "shell", privileged: true, inline: <<-SHELL
-      set -e -x -u
-      export DEBIAN_FRONTEND=noninteractive
-
-      apt-get install -y apt-transport-https ca-certificates gnupg lsb-release
-      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-      echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-      apt-get update -y
-      apt-get install -y docker-ce docker-ce-cli containerd.io
-
-      echo "root:vagrant" | chpasswd
-
-      echo "source <(kubectl completion bash)" >> /root/.bashrc
-      echo "alias k='kubectl'" >> /root/.bashrc
-      echo "complete -F __start_kubectl k" >> /root/.bashrc
-      echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
-      echo "complete -F __start_kubectl kl" >> /root/.bashrc
-
-      git config --global user.name "Derek Su"
-      git config --global user.email derek.su@suse.com
-      git config --global core.editor vim
-    SHELL
   end
 end
