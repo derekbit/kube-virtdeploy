@@ -100,7 +100,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         export DEBIAN_FRONTEND=noninteractive
 
         export INSTALL_K3S_VERSION=#{bootstrap['version']}
+        export K3S_TOKEN=#{cluster['token']}
         curl -sfL https://get.k3s.io | sh -
+
         mkdir -p /root/.kube
         cp -a /etc/rancher/k3s/k3s.yaml /root/.kube/config
       SHELL
