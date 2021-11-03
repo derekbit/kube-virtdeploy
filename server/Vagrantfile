@@ -168,8 +168,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         export K3S_TOKEN=#{cluster['token']}
         curl -sfL https://get.k3s.io | sh -
 
-        mkdir -p /root/.kube
-        cp -a /etc/rancher/k3s/k3s.yaml /root/.kube/config
+        echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.bashrc
       SHELL
     end
 
