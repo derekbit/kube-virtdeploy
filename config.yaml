@@ -6,7 +6,9 @@ cluster:
     version: v1.21.5
   k9s:
     version: v0.24.15
-  prefix: my90
+  kubelet:
+    log-level: 2
+  prefix: my50
   vm:
     box: generic/ubuntu1804
     version: 3.4.2
@@ -15,11 +17,7 @@ cluster:
   token: helloworld
   server:
     name: master
-    ip: 10.20.90.90
+    ip: 10.20.90.50
   workers:
     - name: worker1
-      ip: 10.20.90.91
-    - name: worker2
-      ip: 10.20.90.92
-    - name: worker3
-      ip: 10.20.90.93
+      ip: 10.20.90.51

@@ -9,6 +9,7 @@ cluster = config_file['cluster']
 
 bootstrap = config_file['cluster']['bootstrap']
 kubectl = config_file['cluster']['kubectl']
+kubelet = config_file['cluster']['kubelet']
 k9s = config_file['cluster']['k9s']
 
 vm = config_file['cluster']['vm']
@@ -166,6 +167,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         export INSTALL_K3S_VERSION=#{bootstrap['version']}
         export K3S_TOKEN=#{cluster['token']}
+        export INSTALL_K3S_EXEC='--kubelet-arg v=#{kubelet['log-level']}'
+
         curl -sfL https://get.k3s.io | sh -
 
         echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.bashrc
