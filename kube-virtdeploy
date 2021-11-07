@@ -1,0 +1,101 @@
+#!/bin/bash
+
+PROGNAME=$(basename $0)
+
+CONFFILE=./config.yaml
+
+usage()
+{
+	cat << EOF
+Usage:
+$PROGNAME start [--config <path>]       start deployment
+$PROGNAME start [--config <path>]       stop deployment
+$PROGNAME help                              display help
+EOF
+}
+
+function do_start () {
+	echo "Start using $CONFFILE"
+
+	pushd ./server
+	vagrant up
+	popd
+
+	pushd ./worker
+	vagrant up
+	popd
+
+}
+
+function do_stop () {
+	echo "Stop using $CONFFILE"
+
+	pushd ./server
+	vagrant destroy
+	popd
+
+	pushd ./worker
+	vagrant destroy
+	popd
+}
+
+##################################################
+# Main logic.
+##################################################
+# parse arguments and options.
+declare -a params=()
+
+for OPT in "$@"
+do
+	case "$OPT" in
+		'--config' )
+			if [[ -z "${2:-}" ]] || [[ "${2:-}" =~ ^-+ ]]; then
+				echo "${PROGNAME}: option '$1' requires an argument." 1>&2
+				exit 1
+			fi
+			CONFFILE="$2"
+			shift 2
+		;;
+		-*)
+			echo "${PROGNAME}: illegal option -- '$(echo $1 | sed 's/^-*//')'" 1>&2
+			exit 1
+			;;
+		*)
+			if [[ ! -z "${1:-}" ]] && [[ ! "${1:-}" =~ ^-+ ]]; then
+				params+=( "$1" )
+				shift 1
+			fi
+			;;
+	esac
+done
+
+command="" && [ ${#params[@]} -ne 0 ] && command="${params[0]}"
+
+case $command in
+	'start' )
+		if [ ${#params[@]} -lt 1 ]; then
+			exit 1
+		fi
+		do_start
+		exit $?
+		;;
+	'stop' )
+		if [ ${#params[@]} -lt 1 ]; then
+			exit 1
+		fi
+		do_stop
+		exit $?
+		;;
+	'help' )
+		usage
+		exit 0
+		;;
+	'' )
+		echo "Try \`${PROGNAME} help' for more information."
+		exit 0
+		;;
+	*)
+		echo "${PROGNAME}: illegal command '$command'" 1>&2
+		exit 1
+		;;
+esac

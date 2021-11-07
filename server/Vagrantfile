@@ -5,27 +5,20 @@ VAGRANTFILE_API_VERSION = "2"
 
 config_file = YAML.load_file('../config.yaml')
 
-cluster = config_file['cluster']
+token = config_file['cluster']['token']
 
 bootstrap = config_file['cluster']['bootstrap']
 kubectl = config_file['cluster']['kubectl']
 kubelet = config_file['cluster']['kubelet']
 k9s = config_file['cluster']['k9s']
+stern  = config_file['cluster']['stern']
 
 vm = config_file['cluster']['vm']
 server = config_file['cluster']['server']
 
+cluster = config_file['cluster']
 hostname = "#{cluster['prefix']}-#{server['name']}"
 ip = "#{server['ip']}"
-
-$write_rke2_config=<<SCRIPT
-cat <<EOF > /etc/rancher/rke2/config.yaml
-token: ${1}
-node-external-ip: ${2}
-node-ip: ${2}
-kubelet-arg: "--v=4"
-EOF
-SCRIPT
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provider :libvirt do |libvirt|
@@ -41,99 +34,24 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     privileged: true,
     run: "always"
 
-  config.vm.provision "shell",
-    run: "always",
-    inline: "route add default gw 10.20.90.1"
+  config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
+  config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
 
-  # Set root password
-  config.vm.provision "shell", privileged: true, inline: <<-SHELL
-    set -e -x -u
-    export DEBIAN_FRONTEND=noninteractive
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_personal_tools.sh"
 
-    echo "root:vagrant" | chpasswd
-  SHELL
-
-  config.vm.provision "shell", privileged: true, inline: <<-SHELL
-    set -e -x -u
-    export DEBIAN_FRONTEND=noninteractive
-
-    apt-get update -y
-    apt-get install -y git vim curl build-essential openssh-server
-    apt-get install -y jq open-iscsi nfs-common
-
-    bash <(curl -Ss https://raw.githubusercontent.com/derekbit/dev-env/basic/install.sh)
-  SHELL
-
-  # Install k9s
-  config.vm.provision "shell", privileged: true, inline: <<-SHELL
-    set -e -x -u
-    export DEBIAN_FRONTEND=noninteractive
-
-    curl -sfL https://github.com/derailed/k9s/releases/download/#{k9s['version']}/k9s_Linux_x86_64.tar.gz | tar zxvf - -C /usr/local/bin
-    chmod 755 /usr/local/bin/k9s
-  SHELL
-
-  # Install my development tools
-  config.vm.provision "shell", privileged: true, inline: <<-SHELL
-    set -e -x -u
-    export DEBIAN_FRONTEND=noninteractive
-
-    bash <(curl -Ss https://raw.githubusercontent.com/derekbit/dev-env/basic/install.sh)
-  SHELL
-
-  # Install docker
-  config.vm.provision "shell", privileged: true, inline: <<-SHELL
-    set -e -x -u
-    export DEBIAN_FRONTEND=noninteractive
-
-    apt-get install -y apt-transport-https ca-certificates gnupg lsb-release
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get update -y
-    apt-get install -y docker-ce docker-ce-cli containerd.io
-  SHELL
-
-  # Set git configuration
-  config.vm.provision "shell", privileged: true, inline: <<-SHELL
-    set -e -x -u
-    export DEBIAN_FRONTEND=noninteractive
-
-    git config --global user.name "Derek Su"
-    git config --global user.email derek.su@suse.com
-    git config --global core.editor vim
-  SHELL
-
-  # Set kubectl completion
-  config.vm.provision "shell", privileged: true, inline: <<-SHELL
-    set -e -x -u
-    export DEBIAN_FRONTEND=noninteractive
-
-    echo "source <(kubectl completion bash)" >> /root/.bashrc
-    echo "alias k='kubectl'" >> /root/.bashrc
-    echo "complete -F __start_kubectl k" >> /root/.bashrc
-    echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
-    echo "complete -F __start_kubectl kl" >> /root/.bashrc
-  SHELL
-
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_k9s.sh", args: [k9s['version']]
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_stern.sh", args: [stern['version']]
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_docker.sh"
 
   if bootstrap['name'] == 'rke2'
-    config.vm.provision "shell", privileged: true, inline: <<-SHELL
-      set -e -x -u
-      export DEBIAN_FRONTEND=noninteractive
-
-      echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
-      echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
-    SHELL
+    config.vm.provision "shell", privileged: true, path: "../scripts/install_rke2-server.sh", args: [bootstrap['version'], "#{token}", kubelet['log-level'], "#{ip}"]
   elsif bootstrap['name'] == 'k3s'
-    config.vm.provision "shell", privileged: true, inline: <<-SHELL
-      set -e -x -u
-      export DEBIAN_FRONTEND=noninteractive
-
-      wget https://dl.k8s.io/release/#{kubectl['version']}/bin/linux/amd64/kubectl -P /usr/local/bin
-      chmod 755 /usr/local/bin/kubectl
-    SHELL
+    config.vm.provision "shell", privileged: true, path: "../scripts/install_k3s-server.sh", args: [bootstrap['version'], "#{token}", kubelet['log-level']]
+    config.vm.provision "shell", privileged: true, path: "../scripts/install_kubectl.sh", args: [kubectl['version']]
   end
+
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_k8s_completion.sh"
 
   # Server node
   config.vm.define "#{hostname}" do |node|
@@ -149,31 +67,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       v.cpus = vm['cpus']
       v.memory = vm['memory']
     end
-
-    # Start master service
-    if bootstrap['name'] == 'rke2'
-      node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export KUBECONFIG=/etc/rancher/rke2/rke2.yaml >> /root/.bashrc'"
-      node.vm.provision "shell", privileged: true, inline: "sh -c 'echo export PATH=$PATH:/var/lib/rancher/rke2/bin >> /root/.bashrc'"
-      node.vm.provision "shell", privileged: true, inline: "curl -sfL https://get.rke2.io | sh -"
-      node.vm.provision "shell", privileged: true, inline: "systemctl enable rke2-server.service"
-      node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/rke2"
-      node.vm.provision "shell", privileged: true, inline: $write_rke2_config, args: [cluster['token'], "#{ip}"]
-      node.vm.provision "shell", privileged: true, inline: "systemctl start rke2-server.service"
-    elsif bootstrap['name'] == 'k3s'
-      node.vm.provision "shell", privileged: true, inline: "mkdir -p /etc/rancher/k3s"
-      node.vm.provision "shell", privileged: true, inline: <<-SHELL
-        set -e -x -u
-        export DEBIAN_FRONTEND=noninteractive
-
-        export INSTALL_K3S_VERSION=#{bootstrap['version']}
-        export K3S_TOKEN=#{cluster['token']}
-        export INSTALL_K3S_EXEC='--kubelet-arg v=#{kubelet['log-level']}'
-
-        curl -sfL https://get.k3s.io | sh -
-
-        echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.bashrc
-      SHELL
-    end
-
   end
 end
+

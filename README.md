@@ -1,6 +1,6 @@
-# rke2-vagrant
+# Kube-VirtDeploy
 
-Create a kubernetes cluster using vagrant/kvm/rke2 in minutes.
+Create a kubernetes cluster using vagrant, KVM/QEMU and RKE2|K3s in minutes.
 
 ## Prerequisite
 ```
@@ -8,19 +8,15 @@ $ vagrant plugin install vagrant-disksize
 ```
 
 ## Usage
-### Stop
-```
-$ sudo vagrant destroy
-```
-## Usage
+### Configure
+Edit the config.yaml according your configuration.
+
 ### Start
 ```
-$ git clone https://github.com/derekbit/rke2-vagrant.git
-$ cd rke2-vagrant
-$ sudo ./start.sh
+$ ./kube-virtdeploy start
 ```
 
 ### Stop
 ```
-$ sudo ./stop.sh
+$ ./kube-virtdeploy stop
 ```

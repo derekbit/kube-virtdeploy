@@ -1,23 +1,25 @@
 cluster:
   bootstrap:
-    name: k3s
-    version: v1.21.5+k3s2
+    name: rke2
+    version: v1.22.3+rke2r1
   kubectl:
-    version: v1.21.5
+    version: v1.22.3
   k9s:
     version: v0.24.15
+  stern:
+    version: 1.11.0
   kubelet:
-    log-level: 2
-  prefix: my50
+    log-level: 8
+  prefix: my70
   vm:
     box: generic/ubuntu1804
     version: 3.4.2
-    cpus: 4
+    cpus: 2
     memory: 2048
   token: helloworld
   server:
     name: master
-    ip: 10.20.90.50
+    ip: 10.20.90.70
   workers:
     - name: worker1
-      ip: 10.20.90.51
+      ip: 10.20.90.71
