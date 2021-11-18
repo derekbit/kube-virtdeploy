@@ -22,6 +22,7 @@ token: ${RKE2_TOKEN}
 node-external-ip: ${IP}
 node-ip: ${IP}
 kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
+resolv-conf: "/run/systemd/resolve/resolv.conf"
 EOF
 
 curl -sfL https://get.rke2.io | sh -

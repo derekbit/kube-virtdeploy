@@ -18,6 +18,7 @@ token: ${RKE2_TOKEN}
 node-external-ip: ${IP}
 node-ip: ${IP}
 kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
+resolv-conf: "/run/systemd/resolve/resolv.conf"
 EOF
 
 export INSTALL_RKE2_VERSION=${RKE2_VERSION}

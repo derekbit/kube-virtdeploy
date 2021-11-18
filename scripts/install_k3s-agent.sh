@@ -10,6 +10,6 @@ KUBELET_LOG_LEVEL=$4
 export INSTALL_K3S_VERSION=${K3S_VERSION}
 export K3S_TOKEN=${K3S_TOKEN}
 export K3S_URL=${K3S_URL}
-export INSTALL_K3S_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL}"
+export INSTALL_K3S_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /run/systemd/resolve/resolv.conf"
 
 curl -sfL https://get.k3s.io | sh -

@@ -15,3 +15,6 @@ $ ./kube-virtdeploy start
 ```
 $ ./kube-virtdeploy stop
 ```
+
+### Issues
+- [Debugging DNS Resolution](https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/#known-issues)
