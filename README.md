@@ -16,5 +16,8 @@ $ ./kube-virtdeploy start
 $ ./kube-virtdeploy stop
 ```
 
-### Issues
+### Issues Notes
 - [Debugging DNS Resolution](https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/#known-issues)
+
+- [Kubernetes: Pods Can't Resolve Hostnames](https://stackoverflow.com/questions/45805483/kubernetes-pods-cant-resolve-hostnames)
+  Quick solution: restart coreDNS by `kubectl -n kube-system rollout restart deployment coredns`

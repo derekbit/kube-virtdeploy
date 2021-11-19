@@ -1,7 +1,7 @@
 cluster:
   bootstrap:
-    name: rke2
-    version: v1.22.3+rke2r1
+    name: k3s
+    version: v1.22.3+k3s1
   kubectl:
     version: v1.22.3
   k9s:
@@ -10,16 +10,18 @@ cluster:
     version: 1.11.0
   kubelet:
     log-level: 8
-  prefix: my70
+  prefix: ku60
   vm:
-    box: generic/ubuntu1804
-    version: 3.4.2
+    box: generic/debian10
+    version: 3.5.2
     cpus: 2
     memory: 2048
   token: helloworld
   server:
     name: master
-    ip: 10.20.90.70
+    ip: 10.20.90.60
   workers:
     - name: worker1
-      ip: 10.20.90.71
+      ip: 10.20.90.61
+    - name: worker2
+      ip: 10.20.90.62

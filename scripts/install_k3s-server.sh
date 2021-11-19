@@ -8,7 +8,7 @@ KUBELET_LOG_LEVEL=$3
 
 export INSTALL_K3S_VERSION=${K3S_VERSION}
 export K3S_TOKEN=${K3S_TOKEN}
-export INSTALL_K3S_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /run/systemd/resolve/resolv.conf"
+export INSTALL_K3S_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
 
 mkdir -p /etc/rancher/k3s
 curl -sfL https://get.k3s.io | sh -

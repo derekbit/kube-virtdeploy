@@ -23,12 +23,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = vm['box']
   config.vm.box_version = vm['version']
 
-  config.vm.provision "net",
-    type: "shell",
-    path: "../scripts/fix.generic-ubuntu-dns.sh",
-    privileged: true,
-    run: "always"
-
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
 

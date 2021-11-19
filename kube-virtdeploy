@@ -3,39 +3,76 @@
 PROGNAME=$(basename $0)
 
 CONFFILE=./config.yaml
+FORCE=0
 
 usage()
 {
-	cat << EOF
+cat << EOF
+$PROGNAME -- create a kubernetes cluster using KVM/QEMU and RKE2|K3s in minutes
 Usage:
 $PROGNAME start [--config <path>]       start deployment
-$PROGNAME start [--config <path>]       stop deployment
-$PROGNAME help                              display help
+$PROGNAME stop [--config <path>]        stop deployment
+$PROGNAME startup name                  start up the specified node
+$PROGNAME shutdown name [--force]       shut down the specified node
+$PROGNAME help                          display help
 EOF
 }
 
 function do_start () {
 	echo "Start using $CONFFILE"
 
-	pushd ./server
-	vagrant up
+	pushd ./vagrant
+	VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant up
+	VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant up
 	popd
-
-	pushd ./worker
-	vagrant up
-	popd
-
 }
 
 function do_stop () {
 	echo "Stop using $CONFFILE"
 
-	pushd ./server
-	vagrant destroy
+	pushd ./vagrant
+	VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant destroy
+	VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant destroy
 	popd
+}
 
-	pushd ./worker
-	vagrant destroy
+function do_startup() {
+	NODE="$1"
+
+	echo "Start up \`$NODE\`"
+
+	if [[ "$NODE" =~ "master" ]]; then
+		echo "master"
+		VAGRANTFILE=Vagrantfile.server
+	else
+		VAGRANTFILE=Vagrantfile.worker
+	fi
+
+	pushd ./vagrant
+	VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant up "$NODE"
+	popd
+}
+
+function do_shutdown() {
+	NODE="$1"
+
+	echo "Shut down \`$NODE\`"
+
+	pushd ./vagrant
+
+	if [[ "$NODE" =~ "master" ]]; then
+		echo "master"
+		VAGRANTFILE=Vagrantfile.server
+	else
+		VAGRANTFILE=Vagrantfile.worker
+	fi
+
+	if [ "x$FORCE" == x"0" ]; then
+		VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt "$NODE"
+	else
+		VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt --force "$NODE"
+	fi
+
 	popd
 }
 
@@ -55,6 +92,10 @@ do
 			fi
 			CONFFILE="$2"
 			shift 2
+		;;
+		'--force' )
+			FORCE=1
+			shift 1
 		;;
 		-*)
 			echo "${PROGNAME}: illegal option -- '$(echo $1 | sed 's/^-*//')'" 1>&2
@@ -85,6 +126,18 @@ case $command in
 		fi
 		do_stop
 		exit $?
+		;;
+	'startup' )
+		if [ ${#params[@]} -eq 3 ]; then
+			exit 1
+		fi
+		do_startup "${params[1]}"
+		;;
+	'shutdown' )
+		if [ ${#params[@]} -eq 3 ]; then
+			exit 1
+		fi
+		do_shutdown "${params[1]}"
 		;;
 	'help' )
 		usage

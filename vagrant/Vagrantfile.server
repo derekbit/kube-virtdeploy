@@ -28,12 +28,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = vm['box']
   config.vm.box_version = vm['version']
 
-  config.vm.provision "net",
-    type: "shell",
-    path: "../scripts/fix.generic-ubuntu-dns.sh",
-    privileged: true,
-    run: "always"
-
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
 
@@ -42,7 +36,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provision "shell", privileged: true, path: "../scripts/install_k9s.sh", args: [k9s['version']]
   config.vm.provision "shell", privileged: true, path: "../scripts/install_stern.sh", args: [stern['version']]
-  config.vm.provision "shell", privileged: true, path: "../scripts/install_docker.sh"
 
   if bootstrap['name'] == 'rke2'
     config.vm.provision "shell", privileged: true, path: "../scripts/install_rke2-server.sh", args: [bootstrap['version'], "#{token}", kubelet['log-level'], "#{ip}"]
