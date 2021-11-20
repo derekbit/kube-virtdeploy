@@ -12,7 +12,7 @@ cluster:
     log-level: 8
   prefix: ku60
   vm:
-    box: generic/debian10
+    box: generic/ubuntu1804
     version: 3.5.2
     cpus: 2
     memory: 2048
@@ -25,3 +25,5 @@ cluster:
       ip: 10.20.90.61
     - name: worker2
       ip: 10.20.90.62
+    - name: worker3
+      ip: 10.20.90.63

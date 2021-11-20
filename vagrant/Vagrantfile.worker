@@ -26,6 +26,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
 
+  config.vm.provision "shell", privileged: true, path: "../scripts/disable_systemd-resolved.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
 
   # Worker nodes
