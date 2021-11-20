@@ -6,14 +6,24 @@ Create a kubernetes cluster using KVM/QEMU and RKE2|K3s in minutes.
 ### Configure
 Edit the config.yaml according your configuration.
 
-### Start
+### Bootstrap a cluster
 ```
 $ ./kube-virtdeploy start
 ```
 
-### Stop
+### Destrop a cluster
 ```
 $ ./kube-virtdeploy stop
+```
+
+### Start up a node
+```
+$ ./kube-virtdeploy startup <name>
+```
+
+### Shutdown a node
+```
+$ ./kube-virtdeploy shutdown <name> --force
 ```
 
 ### Issues Notes
