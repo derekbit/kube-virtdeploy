@@ -1,9 +1,9 @@
 cluster:
   bootstrap:
     name: k3s
-    version: v1.22.3+k3s1
+    version: v1.22.2+k3s2
   kubectl:
-    version: v1.22.3
+    version: v1.22.2
   k9s:
     version: v0.24.15
   stern:
@@ -27,3 +27,5 @@ cluster:
       ip: 10.20.90.62
     - name: worker3
       ip: 10.20.90.63
+    - name: worker4
+      ip: 10.20.90.64
