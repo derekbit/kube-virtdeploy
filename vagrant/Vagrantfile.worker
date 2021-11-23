@@ -3,7 +3,7 @@
 
 VAGRANTFILE_API_VERSION = "2"
 
-config_file = YAML.load_file('../config.yaml')
+config_file = YAML.load_file(ENV['KUBE_VIRTDEPLOY_CONFIG'])
 
 token = config_file['cluster']['token']
 bootstrap = config_file['cluster']['bootstrap']

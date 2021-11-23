@@ -22,8 +22,8 @@ function do_start () {
 	echo "Start using $CONFFILE"
 
 	pushd ./vagrant
-	VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant up
-	VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant up
+	KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant up
+	KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant up
 	popd
 }
 
@@ -31,8 +31,8 @@ function do_stop () {
 	echo "Stop using $CONFFILE"
 
 	pushd ./vagrant
-	VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant destroy
-	VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant destroy
+	exec env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant destroy
+	exec env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant destroy
 	popd
 }
 
@@ -90,7 +90,7 @@ do
 				echo "${PROGNAME}: option '$1' requires an argument." 1>&2
 				exit 1
 			fi
-			CONFFILE="$2"
+			CONFFILE=`realpath "$2"`
 			shift 2
 		;;
 		'--force' )
