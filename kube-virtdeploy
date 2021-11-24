@@ -31,8 +31,8 @@ function do_stop () {
 	echo "Stop using $CONFFILE"
 
 	pushd ./vagrant
-	exec env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant destroy
-	exec env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant destroy
+	env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant destroy
+	env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant destroy
 	popd
 }
 
