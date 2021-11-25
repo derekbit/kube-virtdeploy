@@ -2,7 +2,7 @@
 
 PROGNAME=$(basename $0)
 
-CONFFILE=./config.yaml
+CONFFILE=`realpath ./config.yaml`
 FORCE=0
 
 usage()
