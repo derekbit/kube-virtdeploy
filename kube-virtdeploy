@@ -10,11 +10,10 @@ usage()
 cat << EOF
 $PROGNAME -- create a kubernetes cluster using KVM/QEMU and RKE2|K3s in minutes
 Usage:
-$PROGNAME start [--config <path>]       start deployment
-$PROGNAME stop [--config <path>]        stop deployment
-$PROGNAME startup name                  start up the specified node
-$PROGNAME shutdown name [--force]       shut down the specified node
-$PROGNAME help                          display help
+$PROGNAME start [name] [--config <path>]  start deployment or the specified node
+$PROGNAME stop [--config <path>]          stop deployment
+$PROGNAME halt [name] [--config <path>]   halt deployment or the specified node
+$PROGNAME help                            display help
 EOF
 }
 
@@ -36,7 +35,21 @@ function do_stop () {
 	popd
 }
 
-function do_startup() {
+function do_halt () {
+	echo "Halt using $CONFFILE"
+
+	pushd ./vagrant
+	if [ "x$FORCE" == x"0" ]; then
+		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant halt
+		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant halt
+	else
+		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant halt --force
+		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant halt --force
+	fi
+	popd
+}
+
+function do_start_one () {
 	NODE="$1"
 
 	echo "Start up \`$NODE\`"
@@ -49,11 +62,11 @@ function do_startup() {
 	fi
 
 	pushd ./vagrant
-	VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant up "$NODE"
+	env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant up "$NODE"
 	popd
 }
 
-function do_shutdown() {
+function do_halt_one () {
 	NODE="$1"
 
 	echo "Shut down \`$NODE\`"
@@ -61,16 +74,15 @@ function do_shutdown() {
 	pushd ./vagrant
 
 	if [[ "$NODE" =~ "master" ]]; then
-		echo "master"
 		VAGRANTFILE=Vagrantfile.server
 	else
 		VAGRANTFILE=Vagrantfile.worker
 	fi
 
 	if [ "x$FORCE" == x"0" ]; then
-		VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt "$NODE"
+		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt "$NODE"
 	else
-		VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt --force "$NODE"
+		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt --force "$NODE"
 	fi
 
 	popd
@@ -114,30 +126,29 @@ command="" && [ ${#params[@]} -ne 0 ] && command="${params[0]}"
 
 case $command in
 	'start' )
-		if [ ${#params[@]} -lt 1 ]; then
+		if [ ${#params[@]} -eq 1 ]; then
+			do_start
+		elif [ ${#params[@]} -eq 2 ]; then
+			do_start_one "${params[1]}"
+		else
 			exit 1
 		fi
-		do_start
-		exit $?
 		;;
 	'stop' )
-		if [ ${#params[@]} -lt 1 ]; then
+		if [ ${#params[@]} -eq 1 ]; then
+			do_stop
+		else
 			exit 1
 		fi
-		do_stop
-		exit $?
 		;;
-	'startup' )
-		if [ ${#params[@]} -eq 3 ]; then
+	'halt' )
+		if [ ${#params[@]} -eq 1 ]; then
+			do_halt
+		elif [ ${#params[@]} -eq 2 ]; then
+			do_halt_one "${params[1]}"
+		else
 			exit 1
 		fi
-		do_startup "${params[1]}"
-		;;
-	'shutdown' )
-		if [ ${#params[@]} -eq 3 ]; then
-			exit 1
-		fi
-		do_shutdown "${params[1]}"
 		;;
 	'help' )
 		usage
