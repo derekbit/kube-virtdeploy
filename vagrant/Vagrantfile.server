@@ -23,6 +23,7 @@ ip = "#{server['ip']}"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provider :libvirt do |libvirt|
     libvirt.driver = "kvm"
+    libvirt.storage :file, :size => vm['additional-disk-size']
   end
 
   config.vm.box = vm['box']
@@ -32,9 +33,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
 
   config.vm.provision "shell", privileged: true, path: "../scripts/resize-fs.sh"
+  #config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh"
+
   config.vm.provision "shell", privileged: true, path: "../scripts/disable_systemd-resolved.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/install_tools.sh"
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_modules.sh"
+
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_docker.sh"
 
 
   if bootstrap['name'] == 'rke2'
