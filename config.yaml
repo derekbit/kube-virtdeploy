@@ -9,14 +9,15 @@ cluster:
   stern:
     version: 1.11.0
   kubelet:
-    log-level: 2
-  prefix: kube50
+    log-level: 5
+  prefix: rancher50
   vm:
-    box: generic/ubuntu2004
+    box: generic/ubuntu1804
     version: 3.5.2
-    cpus: 4
-    memory: 32768
-    disk-size: 300
+    cpus: 2
+    memory: 4096
+    disk-size: 50
+    additional-disk-size: 5
   token: helloworld
   server:
     name: master
@@ -24,7 +25,3 @@ cluster:
   workers:
     - name: worker1
       ip: 10.20.90.51
-    - name: worker2
-      ip: 10.20.90.52
-    - name: worker3
-      ip: 10.20.90.53
