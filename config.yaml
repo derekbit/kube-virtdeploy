@@ -18,6 +18,7 @@ cluster:
     memory: 4096
     disk-size: 50
     additional-disk-size: 5
+    additional-disk-filesystem: xfs
   token: helloworld
   server:
     name: master
