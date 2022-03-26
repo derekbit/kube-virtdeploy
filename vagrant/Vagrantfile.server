@@ -25,12 +25,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     libvirt.driver = "kvm"
     if vm['additional-disk-size'] != 0 then
       libvirt.storage :file, :size => vm['additional-disk-size']
-      config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
     end
   end
 
   config.vm.box = vm['box']
   config.vm.box_version = vm['version']
+
+  if vm['additional-disk-size'] != 0 then
+    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
+  end
 
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
