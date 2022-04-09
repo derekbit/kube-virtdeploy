@@ -23,12 +23,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  if vm['additional-disk-size'] != 0 then
-    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
-  end
-
   config.vm.box = vm['box']
   config.vm.box_version = vm['version']
+
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
 
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
@@ -36,8 +34,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", privileged: true, path: "../scripts/resize-fs.sh"
 
   config.vm.provision "shell", privileged: true, path: "../scripts/disable_systemd-resolved.sh"
-  config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/install_modules.sh"
+
+  if vm['additional-disk-size'] != 0 then
+    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
+  end
+
 
   # Worker nodes
   workers.each do |worker|

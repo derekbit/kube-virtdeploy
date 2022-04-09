@@ -31,9 +31,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = vm['box']
   config.vm.box_version = vm['version']
 
-  if vm['additional-disk-size'] != 0 then
-    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
-  end
+  config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
 
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
@@ -41,12 +39,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", privileged: true, path: "../scripts/resize-fs.sh"
 
   config.vm.provision "shell", privileged: true, path: "../scripts/disable_systemd-resolved.sh"
-  config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/install_tools.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/install_modules.sh"
 
   config.vm.provision "shell", privileged: true, path: "../scripts/install_docker.sh"
 
+  if vm['additional-disk-size'] != 0 then
+    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
+  end
 
   if bootstrap['name'] == 'rke2'
     config.vm.provision "shell", privileged: true, path: "../scripts/install_rke2-server.sh", args: [bootstrap['version'], "#{token}", kubelet['log-level'], "#{ip}"]
