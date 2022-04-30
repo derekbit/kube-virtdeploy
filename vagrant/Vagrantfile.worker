@@ -26,15 +26,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = vm['box']
   config.vm.box_version = vm['version']
 
-  config.vm.provision "shell", privileged: true, path: "../scripts/install_packages.sh"
+  config.vm.provision "shell", privileged: true, path: "../scripts/install-packages.sh", args: [bootstrap['name']]
 
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
 
   config.vm.provision "shell", privileged: true, path: "../scripts/resize-fs.sh"
-
-  config.vm.provision "shell", privileged: true, path: "../scripts/disable_systemd-resolved.sh"
-  config.vm.provision "shell", privileged: true, path: "../scripts/install_modules.sh"
+  config.vm.provision "shell", privileged: true, path: "../scripts/disable-systemd-resolved.sh"
 
   if vm['additional-disk-size'] != 0 then
     config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
@@ -60,11 +58,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.machine_virtual_size = vm['disk-size']
       end
 
-      if bootstrap['name'] == 'rke2'
-        node.vm.provision "shell", privileged: true, path: "../scripts/install_rke2-agent.sh", args: [bootstrap['version'], "#{token}", "https://#{server['ip']}:9345", kubelet['log-level'], "#{ip}"]
-      elsif bootstrap['name'] == 'k3s'
-        node.vm.provision "shell", privileged: true, path: "../scripts/install_k3s-agent.sh", args: [bootstrap['version'], "#{token}", "https://#{server['ip']}:6443", kubelet['log-level']]
-      end
+      config.vm.provision "shell", privileged: true, path: "../scripts/install-k8s.sh",
+        args: [bootstrap['name'], bootstrap['version'], "worker", "#{token}", "#{ip}", "https://#{server['ip']}", kubelet['log-level']]
     end
   end
 end
