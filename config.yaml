@@ -2,8 +2,6 @@ cluster:
   bootstrap:
     name: k3s
     version: v1.23.6+k3s1
-  kubectl:
-    version: v1.23.6
   k9s:
     version: v0.24.15
   stern:

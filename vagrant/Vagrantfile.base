@@ -1,0 +1,19 @@
+# -*- mode: ruby -*-
+# # # vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+config_file = YAML.load_file(ENV['KUBE_VIRTDEPLOY_CONFIG'])
+vm = config_file['cluster']['vm']
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = "kvm"
+  end
+
+  config.vm.box = vm['box']
+  config.vm.box_version = vm['version']
+
+  config.vm.provision "shell", privileged: true, path: "../scripts/install-packages.sh", args: [""]
+end
+
