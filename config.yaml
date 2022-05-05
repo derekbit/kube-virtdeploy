@@ -1,24 +1,24 @@
 cluster:
   bootstrap:
     name: k3s
-    version: v1.21.6+k3s1
+    version: v1.23.6+k3s1
   kubectl:
-    version: v1.21.6
+    version: v1.23.6
   k9s:
     version: v0.24.15
   stern:
     version: 1.11.0
   kubelet:
-    log-level: 5
+    log-level: 2
   prefix: rancher50
   vm:
-    box: generic/ubuntu1804
-    version: 3.5.2
+    box: generic/ubuntu2004
+    version: "3.6.14"
     cpus: 2
-    memory: 4096
+    memory: 8192
     disk-size: 50
-    additional-disk-size: 5
-    additional-disk-filesystem: xfs
+    additional-disk-size: 0
+    additional-disk-filesystem: ext4
   token: helloworld
   server:
     name: master
@@ -26,3 +26,7 @@ cluster:
   workers:
     - name: worker1
       ip: 10.20.90.51
+    - name: worker2
+      ip: 10.20.90.52
+    - name: worker3
+      ip: 10.20.90.53
