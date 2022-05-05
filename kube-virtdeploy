@@ -12,6 +12,8 @@ $PROGNAME -- create a kubernetes cluster using KVM/QEMU and RKE2|K3s in minutes
 Usage:
 $PROGNAME start [name] [--config <path>]  start deployment or the specified node
 $PROGNAME stop [--config <path>]          stop deployment
+$PROGNAME start-basevm [--config <path>]  start base virtual machine
+$PROGNAME stop-basevm [--config <path>]   stop base virtual machine
 $PROGNAME halt [name] [--config <path>]   halt deployment or the specified node
 $PROGNAME help                            display help
 EOF
@@ -32,6 +34,22 @@ function do_stop () {
 	pushd ./vagrant
 	env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant destroy
 	env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant destroy
+	popd
+}
+
+function do_start_basevm () {
+	echo "Start base virtual machine using $CONFFILE"
+
+	pushd ./vagrant
+	KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.base vagrant up
+	popd
+}
+
+function do_stop_basevm () {
+	echo "Stop base virtual machine using $CONFFILE"
+
+	pushd ./vagrant
+	env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.base vagrant destroy
 	popd
 }
 
@@ -137,6 +155,20 @@ case $command in
 	'stop' )
 		if [ ${#params[@]} -eq 1 ]; then
 			do_stop
+		else
+			exit 1
+		fi
+		;;
+	'start-basevm' )
+		if [ ${#params[@]} -eq 1 ]; then
+			do_start_basevm
+		else
+			exit 1
+		fi
+		;;
+	'stop-basevm' )
+		if [ ${#params[@]} -eq 1 ]; then
+			do_stop_basevm
 		else
 			exit 1
 		fi

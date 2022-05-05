@@ -19,6 +19,9 @@ case $OS in
 "debian" | "ubuntu" )
   export DEBIAN_FRONTEND=noninteractive
 
+  sed -i 's|us.archive.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
+  sed -i 's|security.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
+
   apt-get update -y
   apt-get install -y git vim curl jq build-essential openssh-server net-tools
   apt-get install -y open-iscsi nfs-common
