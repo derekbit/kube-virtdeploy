@@ -2,11 +2,35 @@
 
 BOOTSTRAPPER=$1
 VERSION=$2
-ROLE=$3
-TOKEN=$4
-NODE_IP=$5
-URL=$6
-KUBELET_LOG_LEVEL=$7
+NOTE_NAME=$3
+ROLE=$4
+TOKEN=$5
+NODE_IP=$6
+URL=$7
+KUBELET_LOG_LEVEL=$8
+
+HELM_VERSION="v3.9.3"
+
+install_helm()
+{
+  wget https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
+  tar zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz
+  sudo mv linux-amd64/helm /usr/local/bin/
+}
+
+install_krew()
+{
+  set -x; cd "$(mktemp -d)" &&
+  OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
+  ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
+  KREW="krew-${OS}_${ARCH}" &&
+  curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" &&
+  tar zxvf "${KREW}.tar.gz" &&
+  ./"${KREW}" install krew
+
+  export PATH=${KREW_ROOT:-$HOME/.krew}/bin:$PATH
+}
+
 
 case $BOOTSTRAPPER in
 "k3s" )
@@ -16,15 +40,19 @@ case $BOOTSTRAPPER in
   case $ROLE in
   "server" )
     #export INSTALL_K3S_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --flannel-backend=wireguard --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
+    #export INSTALL_K3S_EXEC="server --kube-controller-arg node-monitor-period=3s --kube-controller-arg node-monitor-grace-period=12s --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
     export INSTALL_K3S_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
+    #export INSTALL_K3S_EXEC="server --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
 
-    echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.bashrc
+    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
     mkdir -p /etc/rancher/k3s
     curl -sfL https://get.k3s.io | sh - 
     ;;
   "worker" )
     export K3S_URL=${URL}:6443
     export INSTALL_K3S_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
+
     curl -sfL https://get.k3s.io | sh - 
     ;;
   *)
@@ -38,9 +66,11 @@ case $BOOTSTRAPPER in
 
   case $ROLE in
   "server" )
-    echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
-    echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> /root/.bashrc
-    echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
+    #export INSTALL_RKE2_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule"
+
+    export PATH=/var/lib/rancher/rke2/bin:$PATH
+    export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+    export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml
 
     mkdir -p /etc/rancher/rke2
 
@@ -59,7 +89,6 @@ EOF
   "worker" )
     export RKE2_URL=${URL}:9345
     export INSTALL_RKE2_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL}"
-    export INSTALL_RKE2_TYPE=agent
 
     mkdir -p /etc/rancher/rke2
 
@@ -86,8 +115,21 @@ EOF
   ;;
 esac
 
-echo "source <(kubectl completion bash)" >> /root/.bashrc
-echo "alias k='kubectl'" >> /root/.bashrc
-echo "complete -F __start_kubectl k" >> /root/.bashrc
-echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
-echo "complete -F __start_kubectl kl" >> /root/.bashrc
+if [ "$ROLE" = "server" ]; then
+  install_helm
+  install_krew
+
+  echo "export PATH=$PATH" >> /root/.bashrc
+  echo "export KUBECONFIG=$KUBECONFIG" >> /root/.bashrc
+  echo "source <(kubectl completion bash)" >> /root/.bashrc
+  echo "alias k='kubectl'" >> /root/.bashrc
+  echo "complete -F __start_kubectl k" >> /root/.bashrc
+  echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
+  echo "complete -F __start_kubectl kl" >> /root/.bashrc
+
+
+  kubectl taint nodes ${NOTE_NAME} node-role.kubernetes.io/master=true:NoSchedule
+fi
+
+echo "export CRI_CONFIG_FILE=$CRI_CONFIG_FILE" >> /root/.bashrc
+

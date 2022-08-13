@@ -21,13 +21,15 @@ case $OS in
 
   sed -i 's|us.archive.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
   sed -i 's|security.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
+  #sed -i 's|us.archive.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
+  #sed -i 's|security.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
 
-  apt-get update -y
-  apt-get install -y git vim curl jq build-essential openssh-server net-tools
-  apt-get install -y open-iscsi nfs-common
+  ##apt-get update -y
+  ##apt-get install -y git vim curl jq build-essential openssh-server net-tools
+  ##apt-get install -y open-iscsi nfs-common
 
   # Use --flannel-backend=wireguard in K3s
-  apt-get install -y wireguard
+  ##apt-get install -y wireguard
   ;;
 *"centos"* | *"fedora"* )
   #sed -i 's|vault.centos.org|mirror01.idc.hinet.net|g' /etc/yum.repos.d/CentOS-Linux-*
@@ -57,3 +59,6 @@ case $OS in
   exit 1
   ;;
 esac
+
+
+

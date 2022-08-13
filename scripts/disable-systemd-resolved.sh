@@ -12,4 +12,7 @@ systemctl stop systemd-resolved
 
 rm -f /etc/resolv.conf
 
+echo 'nameserver 168.195.1.1' >> /etc/resolv.conf
 echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+
+sleep 5
