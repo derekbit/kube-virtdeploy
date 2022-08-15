@@ -16,14 +16,19 @@ $ ./kube-virtdeploy start
 $ ./kube-virtdeploy stop
 ```
 
-### Start up a node
+### Power up a node
 ```
-$ ./kube-virtdeploy startup <name>
+$ ./kube-virtdeploy power-up <name>
 ```
 
-### Shutdown a node
+### Power down a node
 ```
-$ ./kube-virtdeploy shutdown <name> --force
+$ ./kube-virtdeploy power-down <name> --force
+```
+
+Or, power down a node forcely
+```
+$ ./kube-virtdeploy power-down <name> --force
 ```
 
 ### Issues Notes

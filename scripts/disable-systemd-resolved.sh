@@ -15,4 +15,7 @@ rm -f /etc/resolv.conf
 echo 'nameserver 168.195.1.1' >> /etc/resolv.conf
 echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
 
-sleep 5
+until $(curl --output /dev/null --silent --head --fail https://github.com); do
+    printf '.'
+    sleep 1
+done

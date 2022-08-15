@@ -2,12 +2,21 @@
 
 BOOTSTRAPPER=$1
 VERSION=$2
-NOTE_NAME=$3
-ROLE=$4
-TOKEN=$5
-NODE_IP=$6
-URL=$7
-KUBELET_LOG_LEVEL=$8
+ROLE=$3
+TOKEN=$4
+NODE_IP=$5
+URL=$6
+KUBELET_LOG_LEVEL=$7
+
+HELM_VERSION="v3.9.3"
+
+
+install_helm()
+{
+  wget https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
+  tar zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz
+  sudo mv linux-amd64/helm /usr/local/bin/
+}
 
 install_krew()
 {
@@ -19,11 +28,9 @@ install_krew()
   tar zxvf "${KREW}.tar.gz" &&
   ./"${KREW}" install krew
 
-  export PATH=${KREW_ROOT:-$HOME/.krew}/bin:$PATH
+  echo "export PATH=${KREW_ROOT:-$HOME/.krew}/bin:$PATH" >> /root/.bashrc
 }
 
-echo "BOOTSTRAPPER: $BOOTSTRAPPER"
-echo "ROLE: $ROLE"
 
 case $BOOTSTRAPPER in
 "k3s" )
@@ -37,7 +44,10 @@ case $BOOTSTRAPPER in
     export INSTALL_K3S_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
     #export INSTALL_K3S_EXEC="server --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
 
-    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.bashrc
+
+    install_helm
+    install_krew
 
     mkdir -p /etc/rancher/k3s
     curl -sfL https://get.k3s.io | sh - 
@@ -45,7 +55,6 @@ case $BOOTSTRAPPER in
   "worker" )
     export K3S_URL=${URL}:6443
     export INSTALL_K3S_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
-
     curl -sfL https://get.k3s.io | sh - 
     ;;
   *)
@@ -60,10 +69,9 @@ case $BOOTSTRAPPER in
   case $ROLE in
   "server" )
     #export INSTALL_RKE2_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule"
-
-    export PATH=/var/lib/rancher/rke2/bin:$PATH
-    export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
-    export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml
+    echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
+    echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> /root/.bashrc
+    echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
 
     mkdir -p /etc/rancher/rke2
 
@@ -75,18 +83,28 @@ kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
 resolv-conf: "/etc/resolv.conf"
 EOF
 
-    curl -sfL https://get.rke2.io | sh -
+    #install_helm
+    #install_krew
+
+    #curl -sfL https://get.rke2.io | sh -
+    curl -sfL https://get.rke2.io/ -o /root/rke2.sh
+
+    echo "=============> curl"
+    ls -al /root/
+    sh /root/rke2.sh
+
     systemctl enable rke2-server.service
     systemctl start rke2-server.service
     ;;
-  "worker" )
-    export RKE2_URL=${URL}:9345
-    export INSTALL_RKE2_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL}"
+  "client" )
+    #export INSTALL_RKE2_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule"
+    echo "export PATH=$PATH:/var/lib/rancher/rke2/bin" >> /root/.bashrc
+    echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> /root/.bashrc
+    echo "export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml" >> /root/.bashrc
 
     mkdir -p /etc/rancher/rke2
 
     cat <<EOF > /etc/rancher/rke2/config.yaml
-server: ${RKE2_URL}
 token: ${RKE2_TOKEN}
 node-external-ip: ${NODE_IP}
 node-ip: ${NODE_IP}
@@ -94,8 +112,43 @@ kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
 resolv-conf: "/etc/resolv.conf"
 EOF
 
-    curl -sfL https://get.rke2.io | sh -
+    #install_helm
+    #install_krew
+
+    #curl -sfL https://get.rke2.io | sh -
+    curl -sfL https://get.rke2.io/ -o /root/rke2.sh
+
+    echo "=============> curl"
+    ls -al /root/
+    sh /root/rke2.sh
+
+    #systemctl enable rke2-server.service
+    #systemctl start rke2-server.service
+    ;;
+  "worker" )
+#    export RKE2_URL=${URL}:9345
+#    export INSTALL_RKE2_EXEC="--kubelet-arg v=${KUBELET_LOG_LEVEL}"
+
+#    mkdir -p /etc/rancher/rke2
+
+#    cat <<EOF > /etc/rancher/rke2/config.yaml
+#server: ${RKE2_URL}
+#token: ${RKE2_TOKEN}
+#node-external-ip: ${NODE_IP}
+#node-ip: ${NODE_IP}
+#kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
+#resolv-conf: "/etc/resolv.conf"
+#EOF
+
+    echo "=============> curl"
+    curl -sfL https://get.rke2.io/ -o /root/rke2.sh
+
+    ls -al /root/
+    #curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+    sh /root/rke2.sh
+    echo "=============> enable"
     systemctl enable rke2-agent.service
+    echo "=============> start"
     systemctl start rke2-agent.service
     ;;
   *)
@@ -108,17 +161,8 @@ EOF
   ;;
 esac
 
-if [ "$ROLE" = "server" ]; then
-  install_krew
-
-  echo "export PATH=$PATH" >> /root/.bashrc
-  echo "export KUBECONFIG=$KUBECONFIG" >> /root/.bashrc
-  echo "source <(kubectl completion bash)" >> /root/.bashrc
-  echo "alias k='kubectl'" >> /root/.bashrc
-  echo "complete -F __start_kubectl k" >> /root/.bashrc
-  echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
-  echo "complete -F __start_kubectl kl" >> /root/.bashrc
-fi
-
-echo "export CRI_CONFIG_FILE=$CRI_CONFIG_FILE" >> /root/.bashrc
-
+echo "source <(kubectl completion bash)" >> /root/.bashrc
+echo "alias k='kubectl'" >> /root/.bashrc
+echo "complete -F __start_kubectl k" >> /root/.bashrc
+echo "alias kl='kubectl -n longhorn-system'" >> /root/.bashrc
+echo "complete -F __start_kubectl kl" >> /root/.bashrc

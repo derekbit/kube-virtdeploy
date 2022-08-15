@@ -9,6 +9,7 @@ token = config_file['cluster']['token']
 
 bootstrap = config_file['cluster']['bootstrap']
 kubelet = config_file['cluster']['kubelet']
+helm = config_file['cluster']['helm']
 k9s = config_file['cluster']['k9s']
 stern  = config_file['cluster']['stern']
 
@@ -31,6 +32,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box_version = vm['version']
 
   config.vm.provision "shell", privileged: true, path: "../scripts/install-packages.sh" , args: [bootstrap['name']]
+  config.vm.provision "shell", privileged: true, path: "../scripts/customized-setting.sh"
+  config.vm.provision "shell", privileged: true, path: "../scripts/install-customized.sh", args: [bootstrap['name']]
+  #config.vm.provision "shell", privileged: true, path: "../scripts/install-docker.sh"
 
   config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
@@ -61,6 +65,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.provision "shell", privileged: true, path: "../scripts/install-k8s.sh",
-    args: [bootstrap['name'], bootstrap['version'], "server", "#{token}", "#{ip}", "", kubelet['log-level']]
+    args: [bootstrap['name'], bootstrap['version'], "#{hostname}", "server", "#{token}", "#{ip}", "", kubelet['log-level']]
+  config.vm.provision "shell", privileged: true, path: "../scripts/install-k8s-tools.sh",
+    args: [helm['version'], k9s['version']]
 end
 

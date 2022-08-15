@@ -10,12 +10,12 @@ usage()
 cat << EOF
 $PROGNAME -- create a kubernetes cluster using KVM/QEMU and RKE2|K3s in minutes
 Usage:
-$PROGNAME start [name] [--config <path>]  start deployment or the specified node
-$PROGNAME stop [--config <path>]          stop deployment
-$PROGNAME start-basevm [--config <path>]  start base virtual machine
-$PROGNAME stop-basevm [--config <path>]   stop base virtual machine
-$PROGNAME halt [name] [--config <path>]   halt deployment or the specified node
-$PROGNAME help                            display help
+$PROGNAME start [--config <path>]           bootstrap a Kubernetes cluster
+$PROGNAME stop [--config <path>]            destroy the Kubernetes cluster
+
+$PROGNAME power-up name [--config <path>]   power up the specified node
+$PROGNAME power-down name [--config <path>] power down the specified node
+$PROGNAME help                              display help
 EOF
 }
 
@@ -23,7 +23,7 @@ function do_start () {
 	echo "Start using $CONFFILE"
 
 	pushd ./vagrant
-	KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant up
+        KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant up
 	KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant up
 	popd
 }
@@ -37,40 +37,10 @@ function do_stop () {
 	popd
 }
 
-function do_start_basevm () {
-	echo "Start base virtual machine using $CONFFILE"
-
-	pushd ./vagrant
-	KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.base vagrant up
-	popd
-}
-
-function do_stop_basevm () {
-	echo "Stop base virtual machine using $CONFFILE"
-
-	pushd ./vagrant
-	env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.base vagrant destroy
-	popd
-}
-
-function do_halt () {
-	echo "Halt using $CONFFILE"
-
-	pushd ./vagrant
-	if [ "x$FORCE" == x"0" ]; then
-		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant halt
-		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant halt
-	else
-		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.server vagrant halt --force
-		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE=Vagrantfile.worker vagrant halt --force
-	fi
-	popd
-}
-
-function do_start_one () {
+function do_power_up () {
 	NODE="$1"
 
-	echo "Start up \`$NODE\`"
+	echo "Power up \`$NODE\`"
 
 	if [[ "$NODE" =~ "master" ]]; then
 		echo "master"
@@ -84,24 +54,24 @@ function do_start_one () {
 	popd
 }
 
-function do_halt_one () {
+function do_power_down () {
 	NODE="$1"
 
-	echo "Shut down \`$NODE\`"
-
-	pushd ./vagrant
+	echo "Power up \`$NODE\`"
 
 	if [[ "$NODE" =~ "master" ]]; then
+		echo "master"
 		VAGRANTFILE=Vagrantfile.server
 	else
 		VAGRANTFILE=Vagrantfile.worker
 	fi
 
-	if [ "x$FORCE" == x"0" ]; then
-		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt "$NODE"
-	else
-		env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt --force "$NODE"
-	fi
+	pushd ./vagrant
+        if [ "x$FORCE" == x"0" ]; then
+                env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt "$NODE"
+        else
+                env KUBE_VIRTDEPLOY_CONFIG="$CONFFILE" VAGRANT_VAGRANTFILE="$VAGRANTFILE" vagrant halt --force "$NODE"
+        fi
 
 	popd
 }
@@ -146,8 +116,6 @@ case $command in
 	'start' )
 		if [ ${#params[@]} -eq 1 ]; then
 			do_start
-		elif [ ${#params[@]} -eq 2 ]; then
-			do_start_one "${params[1]}"
 		else
 			exit 1
 		fi
@@ -159,25 +127,16 @@ case $command in
 			exit 1
 		fi
 		;;
-	'start-basevm' )
-		if [ ${#params[@]} -eq 1 ]; then
-			do_start_basevm
+	'power-up' )
+		if [ ${#params[@]} -eq 2 ]; then
+			do_power_up "${params[1]}"
 		else
 			exit 1
 		fi
 		;;
-	'stop-basevm' )
-		if [ ${#params[@]} -eq 1 ]; then
-			do_stop_basevm
-		else
-			exit 1
-		fi
-		;;
-	'halt' )
-		if [ ${#params[@]} -eq 1 ]; then
-			do_halt
-		elif [ ${#params[@]} -eq 2 ]; then
-			do_halt_one "${params[1]}"
+	'power-down' )
+		if [ ${#params[@]} -eq 2 ]; then
+			do_power_down "${params[1]}"
 		else
 			exit 1
 		fi
