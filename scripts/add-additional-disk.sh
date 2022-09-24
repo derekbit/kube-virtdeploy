@@ -1,8 +1,13 @@
 #!/bin/bash
 
 FILESYSTEM=$1
+SIZE=$2
 
 echo ">>> Add additional disk"
+
+if [ "$SIZE" == "0" ]; then
+  exit 0
+fi
 
 DISK="/dev/vdb"
 MOUNTPOINT="/mnt/disk"

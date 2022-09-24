@@ -61,4 +61,4 @@ case $OS in
 esac
 
 
-
+git config --global http.postBuffer 5242880000

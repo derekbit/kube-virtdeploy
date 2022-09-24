@@ -2,12 +2,16 @@
 
 BOOTSTRAPPER=$1
 VERSION=$2
-NOTE_NAME=$3
+NODENAME=$3
 ROLE=$4
 TOKEN=$5
 NODE_IP=$6
 URL=$7
 KUBELET_LOG_LEVEL=$8
+
+if [ "${NODENAME}" != "`hostname`" ]; then
+  exit 0
+fi
 
 install_krew()
 {
@@ -59,8 +63,6 @@ case $BOOTSTRAPPER in
 
   case $ROLE in
   "server" )
-    #export INSTALL_RKE2_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule"
-
     export PATH=/var/lib/rancher/rke2/bin:$PATH
     export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
     export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml
@@ -75,7 +77,7 @@ kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
 resolv-conf: "/etc/resolv.conf"
 EOF
 
-    curl -sfL https://get.rke2.io | sh -
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=${INSTALL_RKE2_VERSION} sh -
     systemctl enable rke2-server.service
     systemctl start rke2-server.service
     ;;
@@ -94,7 +96,7 @@ kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
 resolv-conf: "/etc/resolv.conf"
 EOF
 
-    curl -sfL https://get.rke2.io | sh -
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" INSTALL_RKE2_VERSION=${INSTALL_RKE2_VERSION} sh -
     systemctl enable rke2-agent.service
     systemctl start rke2-agent.service
     ;;
