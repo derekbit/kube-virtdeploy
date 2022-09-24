@@ -20,6 +20,8 @@ cluster = config_file['cluster']
 hostname = "#{cluster['prefix']}-#{server['name']}"
 ip = "#{server['ip']}"
 
+update_packages = config_file['cluster']['update-packages']
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provider :libvirt do |libvirt|
     libvirt.driver = "kvm"

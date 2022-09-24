@@ -10,10 +10,11 @@ cluster:
     version: 1.11.0
   kubelet:
     log-level: 2
+  update-packages: true
   prefix: rancher50
   vm:
-    box: derekbit/ubuntu2004
-    version: "0.0.1"
+    box: generic/ubuntu2004
+    version: "3.6.14"
     cpus: 2
     memory: 8192
     disk-size: 50

@@ -1,9 +1,14 @@
 #!/bin/bash
 
-FILESYSTEM=$1
-SIZE=$2
+NODENAME=$1
+FILESYSTEM=$2
+SIZE=$3
 
 echo ">>> Add additional disk"
+
+if [ "${NODENAME}" != "`hostname`" ]; then
+  exit 0
+fi
 
 if [ "$SIZE" == "0" ]; then
   exit 0

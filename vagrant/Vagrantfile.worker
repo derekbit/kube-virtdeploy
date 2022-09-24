@@ -14,6 +14,8 @@ vm = config_file['cluster']['vm']
 server = config_file['cluster']['server']
 workers = config_file['cluster']['workers']
 
+update_packages = config_file['cluster']['update-packages']
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   workers.each do |worker|
     hostname = "#{cluster['prefix']}-#{worker['name']}"
@@ -58,7 +60,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # Storage
     config.vm.provision "shell", privileged: true, path: "../scripts/resize-fs.sh"
-    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem'], vm['additional-disk-size']]
+    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: ["#{hostname}", vm['additional-disk-filesystem'], vm['additional-disk-size']]
 
     # Kubernetes
     config.vm.provision "shell", privileged: true, path: "../scripts/install-k8s.sh",

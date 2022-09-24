@@ -3,6 +3,7 @@
 echo ">>> Installing packages"
 
 BOOTSTRAPPER=$1
+UPDATE_PACKAGES=$2
 
 host_os()
 {
@@ -24,9 +25,11 @@ case $OS in
   #sed -i 's|us.archive.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
   #sed -i 's|security.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
 
-  ##apt-get update -y
-  ##apt-get install -y git vim curl jq build-essential openssh-server net-tools
-  ##apt-get install -y open-iscsi nfs-common
+  if [ "$UPDATE_PACKAGES" == "true" ]; then
+    apt-get update -y
+    apt-get install -y git vim curl jq build-essential openssh-server net-tools
+    apt-get install -y open-iscsi nfs-common
+  fi
 
   # Use --flannel-backend=wireguard in K3s
   ##apt-get install -y wireguard
