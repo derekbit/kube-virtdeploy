@@ -2,5 +2,5 @@
 
 echo ">>> Resize filesystem"
 
-growpart /dev/vda 3
-resize2fs /dev/vda3
+#growpart /dev/vda 3
+#resize2fs /dev/vda3

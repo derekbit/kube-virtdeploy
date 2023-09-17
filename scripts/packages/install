@@ -5,8 +5,7 @@ echo ">>> Installing packages"
 BOOTSTRAPPER=$1
 UPDATE_PACKAGES=$2
 
-host_os()
-{
+host_os() {
   OS=`grep -E "^ID_LIKE=" /etc/os-release | cut -d '=' -f 2`
   if [[ -z "${OS}" ]]; then
     OS=`grep -E "^ID=" /etc/os-release | cut -d '=' -f 2`
@@ -14,10 +13,27 @@ host_os()
   echo "$OS"
 }
 
-OS=`host_os`
+install_nvme() {
+  apt install -y uuid-dev
+  git clone https://github.com/linux-nvme/nvme-cli.git
+  pushd nvme-cli
+  git checkout v1.16
+  make
+  make install
+  popd
+}
 
-case $OS in
-"debian" | "ubuntu" )
+install_nvme_tcp_module() {
+  modprobe nvme-tcp
+}
+
+install_spdk() {
+  git clone https://github.com/spdk/spdk.git
+  export HUGEMEM=2048
+  bash spdk/scripts/setup.sh
+}
+
+setup_on_debian() {
   export DEBIAN_FRONTEND=noninteractive
 
   sed -i 's|us.archive.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
@@ -25,26 +41,31 @@ case $OS in
   #sed -i 's|us.archive.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
   #sed -i 's|security.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
 
+  apt-get update -y
+
   if [ "$UPDATE_PACKAGES" == "true" ]; then
-    apt-get update -y
     apt-get install -y git vim curl jq build-essential openssh-server net-tools
-    apt-get install -y open-iscsi nfs-common
+    apt-get install -y open-iscsi nfs-common cifs-utils
   fi
 
   # Use --flannel-backend=wireguard in K3s
-  ##apt-get install -y wireguard
-  ;;
-*"centos"* | *"fedora"* )
-  #sed -i 's|vault.centos.org|mirror01.idc.hinet.net|g' /etc/yum.repos.d/CentOS-Linux-*
+  # apt-get install -y wireguard
 
-  #yum update -y
+  install_nvme
+  install_nvme_tcp_module
+  install_spdk
+}
+
+setup_on_rmp() {
+  yum update -y
   yum install -y git vim curl jq wget openssh-clients openssh-server net-tools
+  yum install -y nfs-utils iscsi-initiator-utils cifs-utilss
 
   systemctl disable firewalld --now
   sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
   systemctl restart sshd
 
-  yum install -y nfs-utils iscsi-initiator-utils
+
   yum install -y policycoreutils-python-utils container-selinux
 
   case $BOOTSTRAPPER in
@@ -52,16 +73,25 @@ case $OS in
     yum install -y https://github.com/k3s-io/k3s-selinux/releases/download/v1.1.stable.1/k3s-selinux-1.1-1.el8.noarch.rpm
     ;;
   "rke2" )
-    yum install -y https://github.com/rancher/rke2-selinux/releases/download/v0.9.stable.1/rke2-selinux-0.9-1.el8.noarch.rpm
+    yum install -y https://github.com/rancher/rke2-selinux/releases/download/v0.11.stable.1/rke2-selinux-0.11-1.el8.noarch.rpm
     ;;
   *)
     exit 1
   esac
+}
+
+OS=`host_os`
+case $OS in
+"debian" | "ubuntu" )
+  setup_on_debian
+  ;;
+*"centos"* | *"fedora"* )
+  setup_on_rmp
   ;;
 *)
   exit 1
   ;;
 esac
 
-
+# https://stackoverflow.com/questions/6842687/the-remote-end-hung-up-unexpectedly-while-git-cloning
 git config --global http.postBuffer 5242880000

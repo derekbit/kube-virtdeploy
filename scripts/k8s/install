@@ -13,8 +13,7 @@ if [ "${NODENAME}" != "`hostname`" ]; then
   exit 0
 fi
 
-install_krew()
-{
+install_krew() {
   set -x; cd "$(mktemp -d)" &&
   OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
   ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
@@ -39,6 +38,7 @@ case $BOOTSTRAPPER in
     #export INSTALL_K3S_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --flannel-backend=wireguard --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
     #export INSTALL_K3S_EXEC="server --kube-controller-arg node-monitor-period=3s --kube-controller-arg node-monitor-grace-period=12s --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
     export INSTALL_K3S_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
+    # --disable local-storage
     #export INSTALL_K3S_EXEC="server --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
 
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml

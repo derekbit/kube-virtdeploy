@@ -2,7 +2,7 @@
 
 VERSION="v1.23.6+rke2r2"
 TOKEN="helloworld"
-NODE_IP="10.79.30.131"
+NODE_IP="10.8.59.9"
 
 ########### Main Logic #############
 export INSTALL_RKE2_VERSION=${VERSION}

@@ -50,9 +50,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision "shell", privileged: true, path: "../scripts/setup-user.sh"
 
     # Packages
-    config.vm.provision "shell", privileged: true, path: "../scripts/install-packages.sh", args: [bootstrap['name']]
-    config.vm.provision "shell", privileged: true, path: "../scripts/install-customized.sh", args: [bootstrap['name']]
-    config.vm.provision "shell", privileged: true, path: "../scripts/install-docker.sh"
+    config.vm.provision "shell", privileged: true, path: "../scripts/packages/install", args: [bootstrap['name']]
+    config.vm.provision "shell", privileged: true, path: "../scripts/customized/install", args: [bootstrap['name']]
 
     # Network
     config.vm.provision "shell", privileged: true, path: "../scripts/setup-route.sh"
@@ -63,7 +62,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: ["#{hostname}", vm['additional-disk-filesystem'], vm['additional-disk-size']]
 
     # Kubernetes
-    config.vm.provision "shell", privileged: true, path: "../scripts/install-k8s.sh",
+    config.vm.provision "shell", privileged: true, path: "../scripts/k8s/install",
       args: [bootstrap['name'], bootstrap['version'], "#{hostname}", "worker", "#{token}", "#{ip}", "https://#{server['ip']}", kubelet['log-level']]
   end
 end
