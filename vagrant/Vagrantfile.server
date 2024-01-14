@@ -33,7 +33,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = vm['box']
   config.vm.box_version = vm['version']
 
-  config.vm.provision "shell", privileged: true, path: "../scripts/packages/install" , args: [bootstrap['name']]
+  config.vm.provision "shell", privileged: true, path: "../scripts/packages/install" , args: [bootstrap['name'], "true"]
   config.vm.provision "shell", privileged: true, path: "../scripts/customized-setting.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/customized/install", args: [bootstrap['name']]
 

@@ -1,0 +1,67 @@
+# -*- mode: ruby -*-
+# # # vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+config_file = YAML.load_file(ENV['KUBE_VIRTDEPLOY_CONFIG'])
+
+token = config_file['cluster']['token']
+bootstrap = config_file['cluster']['bootstrap']
+kubelet = config_file['cluster']['kubelet']
+
+cluster = config_file['cluster']
+vm = config_file['cluster']['vm']
+server = config_file['cluster']['server']
+workers = config_file['cluster']['workers']
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = "kvm"
+    if vm['additional-disk-size'] != 0 then
+      libvirt.storage :file, :size => vm['additional-disk-size']
+    end
+  end
+
+  config.vm.box = vm['box']
+  config.vm.box_version = vm['version']
+
+  config.vm.provision "shell", privileged: true, path: "../scripts/install-packages.sh", args: [bootstrap['name']]
+  config.vm.provision "shell", privileged: true, path: "../scripts/install-customized.sh", args: [bootstrap['name']]
+  #config.vm.provision "shell", privileged: true, path: "../scripts/install-docker.sh"
+
+  config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
+  config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
+
+  config.vm.provision "shell", privileged: true, path: "../scripts/resize-fs.sh"
+  config.vm.provision "shell", privileged: true, path: "../scripts/disable-systemd-resolved.sh"
+
+  if vm['additional-disk-size'] != 0 then
+    config.vm.provision "shell", privileged: true, path: "../scripts/add-additional-disk.sh", args: [vm['additional-disk-filesystem']]
+  end
+
+  config.vm.provision "shell", privileged: true, path: "../scripts/hello.sh"
+
+  # Worker nodes
+  workers.each do |worker|
+    hostname = "#{cluster['prefix']}-#{worker['name']}"
+    ip = "#{worker['ip']}"
+
+    config.vm.define "#{hostname}" do |node|
+      node.vm.hostname = "#{hostname}"
+      node.vm.network "public_network",
+        :dev => "br0",
+        :mode => "bridge",
+        :type => "bridge",
+        :ip => "#{ip}",
+        :netmask => "255.255.254.0"
+      node.vm.provider "libvirt" do |v|
+        v.cpus = vm['cpus']
+        v.memory = vm['memory']
+        v.machine_virtual_size = vm['disk-size']
+      end
+
+      #config.vm.provision "shell", privileged: true, path: "../scripts/install-k8s1.sh",
+      #  args: [bootstrap['name'], bootstrap['version'], "#{hostname}", "worker", "#{token}", "#{ip}", "https://#{server['ip']}", kubelet['log-level']]
+    end
+  end
+end
