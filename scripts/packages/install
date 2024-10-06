@@ -30,6 +30,7 @@ install_nvme_tcp_module() {
 install_spdk() {
   git clone https://github.com/spdk/spdk.git
   export HUGEMEM=2048
+  export PCI_ALLOWED="none"
   bash spdk/scripts/setup.sh
 }
 
@@ -37,10 +38,11 @@ setup_on_debian() {
   export DEBIAN_FRONTEND=noninteractive
 
   sed -i 's|mirrors.edge.kernel.org|free.nchc.org.tw|g' /etc/apt/sources.list
-  #sed -i 's|us.archive.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
-  #sed -i 's|security.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
+  sed -i 's|us.archive.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
+  sed -i 's|security.ubuntu.com|free.nchc.org.tw|g' /etc/apt/sources.list
   #sed -i 's|us.archive.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
   #sed -i 's|security.ubuntu.com|ftp.ubuntu-tw.net|g' /etc/apt/sources.list
+
 
   apt-get update -y
 

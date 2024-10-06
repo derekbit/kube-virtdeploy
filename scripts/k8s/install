@@ -44,7 +44,7 @@ case $BOOTSTRAPPER in
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
     mkdir -p /etc/rancher/k3s
-    curl -sfL https://get.k3s.io | sh - 
+    curl -sfL https://get.k3s.io | sudo bash - 
     ;;
   "worker" )
     export K3S_URL=${URL}:6443
@@ -77,7 +77,7 @@ kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
 resolv-conf: "/etc/resolv.conf"
 EOF
 
-    curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=${INSTALL_RKE2_VERSION} sh -
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=${INSTALL_RKE2_VERSION} sudo sh -
     systemctl enable rke2-server.service
     systemctl start rke2-server.service
     ;;

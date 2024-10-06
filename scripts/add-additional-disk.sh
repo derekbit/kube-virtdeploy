@@ -17,6 +17,8 @@ fi
 DISK="/dev/vdb"
 MOUNTPOINT="/mnt/disk"
 
+echo ">>> Format additional disk"
+
 mkdir -p ${MOUNTPOINT}
 
 if [ x"$FILESYSTEM" = x"zfs" ]; then
@@ -26,7 +28,7 @@ if [ x"$FILESYSTEM" = x"zfs" ]; then
   sudo zpool create ${ZFS_POOL_NAME} ${DISK}
 
   sudo zfs set mountpoint=${MOUNTPOINT} ${ZFS_POOL_NAME}
-else
+elif [ x"$FILESYSTEM" = x"ext4" ]; then
   echo -e "n\np\n1\n\n\nw" | fdisk ${DISK}
 
   mkfs.${FILESYSTEM} ${DISK}1

@@ -37,7 +37,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", privileged: true, path: "../scripts/customized-setting.sh"
   config.vm.provision "shell", privileged: true, path: "../scripts/customized/install", args: [bootstrap['name']]
 
-  config.vm.provision "shell", privileged: true, inline: "echo root:vagrant | chpasswd"
   config.vm.provision "shell", privileged: true, inline: "route add default gw 10.20.90.1"
 
   config.vm.provision "shell", privileged: true, path: "../scripts/resize-fs.sh"

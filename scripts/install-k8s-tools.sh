@@ -18,6 +18,6 @@ k9s_install()
   chmod 755 /usr/local/bin/k9s
 }
 
-helm_install
-k9s_install
+#helm_install
+#k9s_install
 

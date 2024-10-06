@@ -2,5 +2,12 @@
 
 echo ">>> Installing customized"
 
-truncate -s 20G /home/vagrant/blockfile
-losetup --direct-io=on /dev/loop10 /home/vagrant/blockfile
+echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
+
+truncate -s 20G /home/vagrant/blockfile1
+losetup --direct-io=on /dev/loop11 /home/vagrant/blockfile1
+
+truncate -s 20G /home/vagrant/blockfile2
+losetup --direct-io=on /dev/loop12 /home/vagrant/blockfile2
+
+exit 0
