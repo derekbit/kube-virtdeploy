@@ -76,8 +76,10 @@ node-ip: ${NODE_IP}
 kubelet-arg: "v=${KUBELET_LOG_LEVEL}"
 resolv-conf: "/etc/resolv.conf"
 EOF
+    #export INSTALL_RKE2_EXEC="server --node-taint node-role.kubernetes.io/master=true:NoExecute --node-taint node-role.kubernetes.io/master=true:NoSchedule --kubelet-arg v=${KUBELET_LOG_LEVEL} --resolv-conf /etc/resolv.conf"
+    xport INSTALL_RKE2_EXEC="server"
 
-    curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=${INSTALL_RKE2_VERSION} sudo sh -
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_EXEC="${INSTALL_RKE2_EXEC}" INSTALL_RKE2_VERSION="${INSTALL_RKE2_VERSION}" sudo -E bash -
     systemctl enable rke2-server.service
     systemctl start rke2-server.service
     ;;
@@ -123,4 +125,5 @@ if [ "$ROLE" = "server" ]; then
 fi
 
 echo "export CRI_CONFIG_FILE=$CRI_CONFIG_FILE" >> /root/.bashrc
+
 

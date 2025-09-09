@@ -2,12 +2,26 @@
 
 echo ">>> Installing customized"
 
-echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
+#echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
+
+DEV="/dev/loop11"
+DM_NAME="mydm"
 
 truncate -s 20G /home/vagrant/blockfile1
-losetup --direct-io=on /dev/loop11 /home/vagrant/blockfile1
+losetup --direct-io=on "$DEV" /home/vagrant/blockfile1
+
+SECTORS=$(blockdev --getsz "$DEV")
+#echo "0 $SECTORS linear $DEV 0" | dmsetup create $DM_NAME
+echo "0 $SECTORS delay $DEV 0 100" | dmsetup create $DM_NAME
+
+mkfs.ext4 /dev/mapper/$DM_NAME
+mkdir /mnt/$DM_NAME
+mount /dev/mapper/$DM_NAME /mnt/$DM_NAME
+
+#==========
 
 truncate -s 20G /home/vagrant/blockfile2
 losetup --direct-io=on /dev/loop12 /home/vagrant/blockfile2
+
 
 exit 0
